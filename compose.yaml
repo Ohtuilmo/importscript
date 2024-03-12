@@ -1,0 +1,6 @@
+version: '2'
+services:
+  importscript:
+    build: '.'
+    environment:
+      - DATABASE_URL=postgres://postgres@host.docker.internal:5432/dev_postgres
