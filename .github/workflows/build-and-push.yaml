@@ -1,0 +1,31 @@
+name: Build image and push it to quay.io
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        id: build-image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: importscript
+          tags: latest ${{ github.sha }}
+          containerfiles: |
+            ./Dockerfile
+
+      - name: Push image to quay.io
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: quay.io/ohtuilmo
+          username: ohtuilmo+github
+          password: ${{ secrets.QUAY_PASSWORD }}
