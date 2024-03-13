@@ -1,49 +1,33 @@
 
-import os
+from db_connection import get_db_connection, close_db_connection
 import csv
 from datetime import datetime, timezone
 import psycopg2
-from dotenv import load_dotenv
 from pathlib import Path
-
-load_dotenv()
-DATABASE_URI = os.getenv('DATABASE_URL')
-
-def connect_to_db():
-    try:
-        conn = psycopg2.connect(DATABASE_URI)
-        return conn, conn.cursor()
-    except psycopg2.Error as e:
-        print(f"Error connecting to the database: {e}")
 
 
 def convert_row(row):
-    """Converts data types for each field and returns row with an error message if any conversion fails."""
+    group_name = row[0]
     try:
-        try:
-            row['Sprintti'] = int(row['Sprintti'])
-        except ValueError:
-            return None, "Invalid format for field 'Sprintti'"
-        
-        try:
-            row['Alkupvm'] = datetime.strptime(row['Alkupvm'], '%Y-%m-%d').date()
-        except ValueError:
-            return None, "Invalid format for field 'Alkupvm'"
+        sprint_number = int(row[1])
+    except ValueError:
+        return None, "sprint_number"
+    try:
+        start_date = datetime.strptime(row[2], '%Y-%m-%d').date()
+    except ValueError:
+        return None, "start_date"
+    try:
+        end_date = datetime.strptime(row[3], '%Y-%m-%d').date()
+    except ValueError:
+        return None, "end_date"
 
-        try:
-            row['Loppupvm'] = datetime.strptime(row['Loppupvm'], '%Y-%m-%d').date()
-        except ValueError:
-            return None, "Invalid date format for field 'Loppupvm'"
-
-        return row, None
-    except Exception as e:
-        return None, f"Unexpected error: {str(e)}"
+    return {'group_name': group_name, 'sprint_number': sprint_number, 'start_date': start_date, 'end_date': end_date}, None
 
 def fetch_group_id(group_name):
     """Fetch the group ID from the 'groups' table based on the given group name."""
 
     try:
-        conn, cur = connect_to_db()
+        conn, cur = get_db_connection()
         query = "SELECT id FROM groups WHERE name = %s"
         cur.execute(query, (group_name,))
         result = cur.fetchone()
@@ -54,59 +38,63 @@ def fetch_group_id(group_name):
     except psycopg2.Error as e:
         return None, f"Error fetching the group ID: {e}"
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+        close_db_connection(conn, cur)
+
+def check_if_row_exists(row, group_id):
+    conn, cur = get_db_connection()
+    query = """
+    SELECT EXISTS (
+        SELECT 1 FROM sprints 
+        WHERE group_id = %s AND sprint = %s AND start_date = %s AND end_date = %s
+    )
+    """
+    cur.execute(query, (group_id, row[1], row[2], row[3]))
+    result = cur.fetchone()
+    return result[0]
 
 def insert_into_database(row, group_id):
     try:
-        conn, cur = connect_to_db()
+        conn, cur = get_db_connection()
         now = datetime.now(timezone.utc)
         query = """
         INSERT INTO sprints (group_id, sprint, start_date, end_date, created_at, updated_at)
         VALUES (%s, %s, %s, %s, %s, %s)
         """
-        cur.execute(query, (group_id, row['Sprintti'], row['Alkupvm'], row['Loppupvm'], now, now))
+        cur.execute(query, (group_id, row[1], row[2], row[3], now, now))
         conn.commit()
     except psycopg2.Error as e:
         return False, f"Database insertion error: {e}"
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+        close_db_connection(conn, cur)
 
 def process_file(filepath):
     with open(filepath, mode='r', encoding='utf-8') as file:
-        reader = csv.DictReader(file, delimiter=';')
+        reader = csv.reader(file, delimiter=';')
         invalid_rows = []
-        successful_rows = 0
 
         for row in reader:
             conversion_success, error_conversion = convert_row(row)
             if conversion_success:
-                group_id, error_group_id = fetch_group_id(row['Ryhmä'])
+                group_id, error_group_id = fetch_group_id(conversion_success['group_name'])
                 if group_id:
-                    insert_into_database(row, group_id)
-                    successful_rows += 1
+                    if not check_if_row_exists(row, group_id):
+                        insert_into_database(row, group_id)
+                    else:
+                        invalid_rows.append((row, "Sprint already exists in the database"))
                 else:
                     invalid_rows.append((row, error_group_id))
             else:
                 invalid_rows.append((row, error_conversion))
-
-        print(f"SUCCESSFUL ROWS: {successful_rows}\n")
         
         if invalid_rows:
-            print("INVALID ROWS:\n")
             for row, error in invalid_rows:
+                print(f"INVALID ROWS IN FILE '{filepath}':\n")
                 print(row)
                 print(f"Error: {error}\n")
 
 def main():
     folder = Path('data/sprint_data')
     for file in folder.glob('*.csv'):
-        print(f"Processing {file.name}")
         process_file(file)
 
 if __name__ == "__main__":

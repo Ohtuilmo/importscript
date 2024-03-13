@@ -1,19 +1,8 @@
-import os
+from db_connection import get_db_connection, close_db_connection
 import csv
 from datetime import datetime, timezone
 import psycopg2
-from dotenv import load_dotenv
 from pathlib import Path
-
-load_dotenv()
-DATABASE_URI = os.getenv('DATABASE_URL')
-
-def connect_to_db():
-    try:
-        conn = psycopg2.connect(DATABASE_URI)
-        return conn, conn.cursor()
-    except psycopg2.Error as e:
-        print(f"Error connecting to the database: {e}")
 
 def convert_hours_to_minutes(hours_str):
     try:
@@ -39,7 +28,7 @@ def fetch_group_id(student_number):
     if not student_number:
         return None, "Student number is empty"
     try:
-        conn, cur = connect_to_db()
+        conn, cur = get_db_connection()
         query = "SELECT group_id FROM group_students WHERE user_student_number = %s"
         cur.execute(query, (student_number,))
         result = cur.fetchone()
@@ -50,16 +39,13 @@ def fetch_group_id(student_number):
     except psycopg2.Error as e:
         return None, f"Error fetching the group ID: {e}"
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+        close_db_connection(conn, cur)
 
 def fetch_sprint_id(group_id, sprint):
 
     """Fetch the sprint ID from the 'sprints' table based on the given group ID and start date."""
 
-    conn, cur = connect_to_db()
+    conn, cur = get_db_connection()
     if conn is None or cur is None:
         return None, "Database connection error"
     
@@ -74,21 +60,31 @@ def fetch_sprint_id(group_id, sprint):
     except psycopg2.Error as e:
         return None, f"Error fetching the sprint ID: {e}"
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+        close_db_connection(conn, cur)
+
+def check_if_row_exists(date, minutes, description, student_number, sprint_id):
+    conn, cur = get_db_connection()
+    query = """
+    SELECT EXISTS (
+        SELECT 1 FROM time_logs
+        WHERE date = %s AND minutes = %s AND description = %s AND student_number = %s AND sprint_id = %s
+    )
+    """
+    cur.execute(query, (date, minutes, description, student_number, sprint_id))
+    result = cur.fetchone()
+    return result[0]
+
 
 def add_time_log(date, minutes, description, student_number, sprint_id):
 
     """Add a new time log entry to the 'time_logs' table. Returns a tuple (success, error_message)"""
     
-    conn, cur = connect_to_db()
-    if conn is None or cur is None:
-        return False, "Database connection error"
-    
+    conn, cur = get_db_connection()  
     created_at = datetime.now(timezone.utc)
     updated_at = datetime.now(timezone.utc)
+
+    if check_if_row_exists(date, minutes, description, student_number, sprint_id):
+        return False, "Timelog already exists in the database"
 
     try:
         query = """
@@ -101,62 +97,58 @@ def add_time_log(date, minutes, description, student_number, sprint_id):
     except psycopg2.Error as e:
         return False, f"Error adding time log to the database: {e}"
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+        close_db_connection(conn, cur)
+
 
 def process_file(filepath):
     with open(filepath, mode='r', encoding='utf-8') as file:
-        reader = csv.DictReader(file, delimiter=';')
+        reader = csv.reader(file, delimiter=';')
         invalid_rows = []
-        successful_rows = 0
 
         for row in reader:
-            minutes, error_minutes = convert_hours_to_minutes(row['Tuntimäärä'])
-            date, error_date = validate_and_format_date(row['Päivämäärä'])
-            sprint, error_sprint = convert_sprint_to_int(row['Sprintti'])
+            if len(row) < 6:
+                invalid_rows.append((row, "Missing values"))
+                continue
+
+            student_number = row[1]
+            sprint_str = row[2]
+            hours_str = row[3]
+            date_str = row[4]
+            description = row[5]
+
+            minutes, error_minutes = convert_hours_to_minutes(hours_str)
+            date, error_date = validate_and_format_date(date_str)
+            sprint, error_sprint = convert_sprint_to_int(sprint_str)
             
             if error_minutes or error_date or error_sprint:
                 error_message = error_minutes or error_date or error_sprint
-                row['Error'] = error_message
-                invalid_rows.append(row)
+                invalid_rows.append((row, error_message))
                 continue
             
-            group_id, error_group_id = fetch_group_id(row['Opiskelijanumero'])
+            group_id, error_group_id = fetch_group_id(student_number)
             if not group_id:
-                row['Error'] = error_group_id
-                invalid_rows.append(row)
+                invalid_rows.append((row, error_group_id))
                 continue
 
             sprint_id, error_sprint_id = fetch_sprint_id(group_id, sprint)
             if not sprint_id:
-                row['Error'] = error_sprint_id
-                invalid_rows.append(row)
+                invalid_rows.append((row, error_sprint_id))
                 continue
             
-            inserted_row, error_db = add_time_log(date, minutes, row['Tekstuaalinen kuvaus tehdystä työstä'], row['Opiskelijanumero'], sprint_id)
-
+            inserted_row, error_db = add_time_log(date, minutes, description, student_number, sprint_id)
             if not inserted_row:
-                row['Error'] = error_db
-                invalid_rows.append(row)
+                invalid_rows.append((row, error_db))
                 continue
-            else:
-                successful_rows += 1
-
-        print(f"SUCCESSFUL ROWS: {successful_rows}\n")
 
         if invalid_rows:
-            print("INVALID ROWS:\n")
-            for row in invalid_rows:
-                error_message = row.pop('Error') 
+            print(f"INVALID ROWS IN FILE '{filepath}':\n")
+            for row, error in invalid_rows:
                 print(row)
-                print(f"Error: {error_message}\n") 
+                print(f"Error: {error}\n")
             
 def main():
     folder = Path('data/timelogs_data')
     for file in folder.glob('*.csv'):
-        print(f"Processing {file.name}")
         process_file(file)
 
 if __name__ == "__main__":
