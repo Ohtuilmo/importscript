@@ -3,7 +3,7 @@ This is an additional feature for the ohtuilmo application.
 
 This repository contains scripts for importing data from CSV files into a database.
 
-## How to run
+# How to use
 
 ### 1. Clone the repository
 ### 2. Add your CSV files to the respective directories within the data folder:
