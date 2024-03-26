@@ -1,2 +1,4 @@
 venv/
 .env
+data/sprint_data/*
+data/import_data/*
