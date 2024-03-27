@@ -11,7 +11,7 @@ COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
 # Create data directories
-RUN mkdir -p data/sprint_data data/import_data
+RUN mkdir -p data
 
 # Copy the rest of the project files to the working directory
 COPY . .
