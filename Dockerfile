@@ -14,7 +14,7 @@ COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
 # Create data directories
-RUN mkdir -p data
+RUN mkdir -p /app/data && chmod 777 /app/data
 
 # Copy the rest of the project files to the working directory
 COPY . .
