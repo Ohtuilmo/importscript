@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import psycopg2
 from pathlib import Path
 
+SPRINT_DATA_PATH = "/tmp/sprint_data/"
 
 def convert_row(row):
     group_name = row[0]
@@ -93,9 +94,10 @@ def process_file(filepath):
                 print(f"Error: {error}\n")
 
 def main():
-    folder = Path('data/sprint_data')
+    folder = Path(SPRINT_DATA_PATH)
     for file in folder.glob('*.csv'):
         process_file(file)
+    print('\nSprint import execution finished\n')
 
 if __name__ == "__main__":
     main()

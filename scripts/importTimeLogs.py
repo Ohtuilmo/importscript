@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import psycopg2
 from pathlib import Path
 
+TIMELOGS_DATA_PATH = "/tmp/timelogs_data"
+
 def convert_hours_to_minutes(hours_str):
     try:
         hours_float = float(hours_str.replace(',', '.'))
@@ -147,9 +149,10 @@ def process_file(filepath):
                 print(f"Error: {error}\n")
             
 def main():
-    folder = Path('data/timelogs_data')
+    folder = Path(TIMELOGS_DATA_PATH)
     for file in folder.glob('*.csv'):
         process_file(file)
+    print('\nTimelogs import execution finished\n')
 
 if __name__ == "__main__":
     main()
