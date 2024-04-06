@@ -74,6 +74,7 @@ def process_file(filepath):
         invalid_rows = []
 
         for row in reader:
+            print(row)
             conversion_success, error_conversion = convert_row(row)
             if conversion_success:
                 group_id, error_group_id = fetch_group_id(conversion_success['group_name'])

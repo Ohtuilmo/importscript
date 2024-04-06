@@ -108,6 +108,7 @@ def process_file(filepath):
         invalid_rows = []
 
         for row in reader:
+            print(row)
             if len(row) < 6:
                 invalid_rows.append((row, "Missing values"))
                 continue
