@@ -25,6 +25,16 @@ Make sure you have following folder structure:
 
 Place sprint CSVs inside sprint_data folder and timelog CSVs inside timelogs_data folder. In next steps, it is assumed that you give commands from folder witch includes folders above.
 
+Required data format for files in sprint_data:
+```
+group name;sprint (number 0-);start date (yyyy-mm-dd);end date (yyyy-mm-dd)
+```
+
+Required data format for files in timelogs_data:
+```
+student number;sprint (number 0-);hours;date (yyyy-mm-dd);textual description of the work
+```
+
 ### 2. Login to oc
 
 For login, you have two options. You can login via your browser with command:
