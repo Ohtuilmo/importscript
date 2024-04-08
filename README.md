@@ -23,23 +23,23 @@ Make sure you have following folder structure:
 └── timelogs_data/
 ```
 
-Place sprint CSVs inside sprint_data folder and timelog CSVs inside timelogs_data folder.
+Place sprint CSVs inside sprint_data folder and timelog CSVs inside timelogs_data folder. In next steps, it is assumed that you give commands from folder witch includes folders above.
 
 ### 2. Login to oc
 
-For login, you have two options. You can login using via your browser with command:
+For login, you have two options. You can login via your browser with command:
 
 ```
 oc login --web
 ```
 
-Alternatively, you can login from command line with command:
+Alternatively, you can login via command line with command:
 
 ```
 oc login -u <username> https://api.ocp-test-0.k8s.it.helsinki.fi:6443
 ```
 
-Use your university username and password. The username format is something like 'elallone' for person Ella Allonen, for example.
+Use your university username and password. The username format is 'elallone' for person Ella Allonen, for example.
 
 ### 3. Create a new app to OpenShift
 
@@ -53,19 +53,13 @@ This will deploy an app called importscript to OpenShift and start one pod.
 
 ### 4. Add DATABASE_URL environment variable to pod
 
-You need to set DATABASE_URL environment variable for app so it can connect to database. For example, in our staging, the DATABASE_URL format is:
+You need to set DATABASE_URL environment variable for app so it can connect to database. If it's already configured on OpenShift as a secret, you can re-use it with command:
 
 ```
-postgres://<db_username>:<password>@possu-test.it.helsinki.fi:5432/<db_name>?ssl=true
+oc set env --from=secret/<your_secret_name> deployment/importscript
 ```
 
-We are still looking for the way to add environment variables to pods via oc command. In the meantime, you can add it via OpenShift web interface:
-
-1. In 'Topology' view, click the importscript app
-2. Open the menu by clicking the three dots next to app name
-3. Select 'Edit Deployment' from the menu
-4. In the opening view scroll down to part 'Environment Variables' and add DATABASE_URL environment variable. You can add it directly or you can use existing secrets by clicking 'Add from ConfigMap or Secret'.
-5. When you are ready, click 'Save'. The pod will restart automatically
+For example, on our staging the DATABASE_URL is configured on secret named 'ohtuilmo-config', so it can be imported with command `oc set env --from=secret/ohtuilmo-config deployment/importscript`
 
 ### 5. Copy sprint_data folder to pod
 
@@ -112,5 +106,7 @@ The script will inform you if there are fault lines in CSV files. In case you ge
 When you are ready, you can delete the app from OpenShift with command:
 
 ```
-
+oc delete all -l app=importscript
 ```
+
+This will remove the deployment and all resources related to importscript app.
