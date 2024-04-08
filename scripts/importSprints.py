@@ -91,8 +91,8 @@ def process_file(filepath):
                 invalid_rows.append((row, error_conversion))
         
         if invalid_rows:
+            print(f"INVALID ROWS IN FILE '{filepath}':\n")
             for row, error in invalid_rows:
-                print(f"INVALID ROWS IN FILE '{filepath}':\n")
                 print(row)
                 print(f"Error: {error}\n")
 
