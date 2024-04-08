@@ -41,17 +41,20 @@ def fetch_group_id(group_name):
     finally:
         close_db_connection(conn, cur)
 
-def check_if_row_exists(row, group_id):
+def check_if_row_exists(group_id, sprint_number):
     conn, cur = get_db_connection()
-    query = """
-    SELECT EXISTS (
-        SELECT 1 FROM sprints 
-        WHERE group_id = %s AND sprint = %s AND start_date = %s AND end_date = %s
-    )
-    """
-    cur.execute(query, (group_id, row[1], row[2], row[3]))
-    result = cur.fetchone()
-    return result[0]
+    try:
+        query = """
+        SELECT EXISTS (
+            SELECT 1 FROM sprints 
+            WHERE group_id = %s AND sprint = %s
+        )
+        """
+        cur.execute(query, (group_id, sprint_number))
+        result = cur.fetchone()
+        return result[0]
+    finally:
+        close_db_connection(conn, cur)
 
 def insert_into_database(row, group_id):
     try:
@@ -74,15 +77,14 @@ def process_file(filepath):
         invalid_rows = []
 
         for row in reader:
-            print(row)
             conversion_success, error_conversion = convert_row(row)
             if conversion_success:
                 group_id, error_group_id = fetch_group_id(conversion_success['group_name'])
                 if group_id:
-                    if not check_if_row_exists(row, group_id):
-                        insert_into_database(row, group_id)
-                    else:
+                    if check_if_row_exists(group_id, conversion_success['sprint_number']):
                         invalid_rows.append((row, "Sprint already exists in the database"))
+                    else:
+                        insert_into_database(row, group_id)
                 else:
                     invalid_rows.append((row, error_group_id))
             else:

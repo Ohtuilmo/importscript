@@ -69,7 +69,7 @@ def check_if_row_exists(date, minutes, description, student_number, sprint_id):
     query = """
     SELECT EXISTS (
         SELECT 1 FROM time_logs
-        WHERE date = %s AND minutes = %s AND description = %s AND student_number = %s AND sprint_id = %s
+        WHERE date = %s AND minutes = %s AND LOWER(description) = LOWER(%s) AND student_number = %s AND sprint_id = %s
     )
     """
     cur.execute(query, (date, minutes, description, student_number, sprint_id))
@@ -108,16 +108,15 @@ def process_file(filepath):
         invalid_rows = []
 
         for row in reader:
-            print(row)
-            if len(row) < 6:
+            if len(row) < 5:
                 invalid_rows.append((row, "Missing values"))
                 continue
 
-            student_number = row[1]
-            sprint_str = row[2]
-            hours_str = row[3]
-            date_str = row[4]
-            description = row[5]
+            student_number = row[0]
+            sprint_str = row[1]
+            hours_str = row[2]
+            date_str = row[3]
+            description = row[4]
 
             minutes, error_minutes = convert_hours_to_minutes(hours_str)
             date, error_date = validate_and_format_date(date_str)
