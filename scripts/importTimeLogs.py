@@ -43,24 +43,22 @@ def fetch_group_id(student_number):
     finally:
         close_db_connection(conn, cur)
 
-def fetch_sprint_id(group_id, sprint):
+def fetch_sprint_id_and_dates(group_id, sprint):
 
-    """Fetch the sprint ID from the 'sprints' table based on the given group ID and start date."""
+    """Fetch the sprint ID and start/end dates from the 'sprints' table based on the given group ID and sprint number."""
 
     conn, cur = get_db_connection()
-    if conn is None or cur is None:
-        return None, "Database connection error"
     
     try:
-        query = "SELECT id FROM sprints WHERE group_id = %s AND sprint = %s"
+        query = "SELECT id, start_date, end_date FROM sprints WHERE group_id = %s AND sprint = %s"
         cur.execute(query, (group_id, sprint))
         result = cur.fetchone()
         if result:
-            return result[0], None
+            return result[0], result[1], result[2], None
         else:
-            return None, "Sprint not found with the provided group ID and sprint number"
+            return None, None, None, "Sprint not found with the provided group ID and sprint number"
     except psycopg2.Error as e:
-        return None, f"Error fetching the sprint ID: {e}"
+        return None, None, None, f"Error fetching the sprint ID: {e}"
     finally:
         close_db_connection(conn, cur)
 
@@ -132,9 +130,13 @@ def process_file(filepath):
                 invalid_rows.append((row, error_group_id))
                 continue
 
-            sprint_id, error_sprint_id = fetch_sprint_id(group_id, sprint)
+            sprint_id, sprint_start_date, sprint_end_date, error_sprint_id = fetch_sprint_id_and_dates(group_id, sprint)
             if not sprint_id:
                 invalid_rows.append((row, error_sprint_id))
+                continue
+
+            if date < sprint_start_date or date > sprint_end_date:
+                invalid_rows.append((row, "Timelog date is not within the sprint date range"))
                 continue
             
             inserted_row, error_db = add_time_log(date, minutes, description, student_number, sprint_id)
