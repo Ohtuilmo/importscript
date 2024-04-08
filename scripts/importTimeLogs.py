@@ -135,7 +135,10 @@ def process_file(filepath):
                 invalid_rows.append((row, error_sprint_id))
                 continue
 
-            if date < sprint_start_date or date > sprint_end_date:
+            sprint_start_date_naive = sprint_start_date.replace(tzinfo=None)
+            sprint_end_date_naive = sprint_end_date.replace(tzinfo=None)
+
+            if date < sprint_start_date_naive or date > sprint_end_date_naive:
                 invalid_rows.append((row, "Timelog date is not within the sprint date range"))
                 continue
             
