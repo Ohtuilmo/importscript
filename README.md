@@ -26,14 +26,18 @@ Make sure you have following folder structure:
 Place sprint CSVs inside sprint_data folder and timelog CSVs inside timelogs_data folder. In next steps, it is assumed that you give commands from folder witch includes folders above.
 
 Required data format for files in sprint_data:
+
 ```
 group name;sprint (number 0-);start date (yyyy-mm-dd);end date (yyyy-mm-dd)
 ```
 
 Required data format for files in timelogs_data:
+
 ```
 student number;sprint (number 0-);hours;date (yyyy-mm-dd);textual description of the work
 ```
+
+Ensure that neither of the files contains empty rows.
 
 ### 2. Login to oc
 
@@ -63,13 +67,13 @@ This will deploy an app called importscript to OpenShift and start one pod.
 
 ### 4. Add DATABASE_URL environment variable to pod
 
-You need to set DATABASE_URL environment variable for app so it can connect to database. If it's already configured on OpenShift as a secret, you can re-use it with command:
+You need to set DATABASE_URL environment variable for app so it can connect to database. If DATABASE_URL is already configured on OpenShift as a secret, you can re-use it with command:
 
 ```
 oc set env --from=secret/<your_secret_name> deployment/importscript
 ```
 
-For example, on our staging the DATABASE_URL is configured on secret named 'ohtuilmo-config', so it can be imported with command `oc set env --from=secret/ohtuilmo-config deployment/importscript`
+For example, on our staging the DATABASE_URL is configured on secret named 'ohtuilmo-config', and it can be imported with command `oc set env --from=secret/ohtuilmo-config deployment/importscript`
 
 ### 5. Copy sprint_data folder to pod
 
@@ -78,8 +82,6 @@ Copy sprint_data folder to pod with command:
 ```
 oc rsync ./sprint_data $(oc get pods -l deployment=importscript -o name):/tmp
 ```
-
-In the command above, we search the pod name with sub-command `oc get pods -l deployment=importscript -o name`. The command may fail if the selector `-l deployment=importscript` matches more than one pod. In that case, find the name of the correct pod and use it as the part of the command: `oc rsync ./sprint_data <pod_name>:/tmp`. The pod name format is importscript-\<some-identifier>.
 
 ### 6. Execute importSprint script
 
@@ -119,4 +121,4 @@ When you are ready, you can delete the app from OpenShift with command:
 oc delete all -l app=importscript
 ```
 
-This will remove the deployment and all resources related to importscript app.
+This will remove the deployment and imagestream related to importscript app.
