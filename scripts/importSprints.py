@@ -65,7 +65,7 @@ def insert_into_database(row, group_id):
         INSERT INTO sprints (group_id, sprint, start_date, end_date, created_at, updated_at)
         VALUES (%s, %s, %s, %s, %s, %s)
         """
-        cur.execute(query, (group_id, row[1], row[2], row[3], now, now))
+        cur.execute(query, (group_id, row['sprint_number'], row['start_date'], row['end_date'], now, now))
         conn.commit()
     except psycopg2.Error as e:
         return False, f"Database insertion error: {e}"
@@ -85,7 +85,7 @@ def process_file(filepath):
                     if check_if_row_exists(group_id, conversion_success['sprint_number']):
                         invalid_rows.append((row, "Sprint already exists in the database"))
                     else:
-                        insert_into_database(row, group_id)
+                        insert_into_database(conversion_success, group_id)
                 else:
                     invalid_rows.append((row, error_group_id))
             else:
