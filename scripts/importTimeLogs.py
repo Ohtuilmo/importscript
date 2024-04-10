@@ -1,6 +1,6 @@
 from db_connection import get_db_connection, close_db_connection
 import csv
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import psycopg2
 from pathlib import Path
 
@@ -15,7 +15,8 @@ def convert_hours_to_minutes(hours_str):
 
 def validate_and_format_date(date_str):
     try:
-        return datetime.strptime(date_str, '%Y-%m-%d'), None
+        dt = datetime.strptime(date_str, '%Y-%m-%d') + timedelta(hours=3)
+        return dt, None
     except ValueError:
         return None, f"Invalid date format: {date_str}"
     
@@ -136,7 +137,7 @@ def process_file(filepath):
                 continue
 
             sprint_start_date_naive = sprint_start_date.replace(tzinfo=None)
-            sprint_end_date_naive = sprint_end_date.replace(tzinfo=None)
+            sprint_end_date_naive = sprint_end_date.replace(tzinfo=None) + timedelta(hours=3)
 
             if date < sprint_start_date_naive or date > sprint_end_date_naive:
                 invalid_rows.append((row, "Timelog date is not within the sprint date range"))
