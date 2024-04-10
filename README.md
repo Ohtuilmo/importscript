@@ -25,17 +25,33 @@ Make sure you have following folder structure:
 
 Place sprint CSVs inside sprint_data folder and timelog CSVs inside timelogs_data folder. In next steps, it is assumed that you give commands from folder witch includes folders above.
 
-Required data format for files in sprint_data:
+**Required data format for files in sprint_data:**
 
 ```
 group name;sprint (number 0-);start date (yyyy-mm-dd);end date (yyyy-mm-dd)
 ```
 
-Required data format for files in timelogs_data:
+eg.
+
+```
+Ohtuprojektien ilmoittautumisjärjestelmä;1;2024-1-17;2024-1-24
+```
+
+Note that the group name has to exactly the one used in Ohtuilmo app. Note also the date format!
+
+**Required data format for files in timelogs_data:**
 
 ```
 student number;sprint (number 0-);hours;date (yyyy-mm-dd);textual description of the work
 ```
+
+eg.
+
+```
+012345678;1;3,5;2024-1-20;Vein sovelluksen onnistuneesti OpenShiftiin
+```
+
+Note the decimal format!
 
 Ensure that neither of the files contains empty rows.
 
