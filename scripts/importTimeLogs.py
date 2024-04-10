@@ -84,7 +84,6 @@ def add_time_log(date, minutes, description, student_number, sprint_id):
     created_at = datetime.now(timezone.utc)
     updated_at = datetime.now(timezone.utc)
 
-    date += timedelta(hours=3)
 
     if check_if_row_exists(date, minutes, description, student_number, sprint_id):
         return False, "Timelog already exists in the database"

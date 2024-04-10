@@ -14,11 +14,11 @@ def convert_row(row):
     except ValueError:
         return None, "sprint_number"
     try:
-        start_date = datetime.strptime(row[2], '%Y-%m-%d').date()
+        start_date = datetime.strptime(row[2], '%Y-%m-%d') + timedelta(hours=3)
     except ValueError:
         return None, "start_date"
     try:
-        end_date = datetime.strptime(row[3], '%Y-%m-%d').date()
+        end_date = datetime.strptime(row[3], '%Y-%m-%d') + timedelta(hours=3)
     except ValueError:
         return None, "end_date"
 
@@ -61,14 +61,11 @@ def insert_into_database(row, group_id):
         conn, cur = get_db_connection()
         now = datetime.now(timezone.utc)
 
-        start_date = row[2] +timedelta(hours=3)
-        end_date = row[3] +timedelta(hours=3)
-
         query = """
         INSERT INTO sprints (group_id, sprint, start_date, end_date, created_at, updated_at)
         VALUES (%s, %s, %s, %s, %s, %s)
         """
-        cur.execute(query, (group_id, row[1], start_date, end_date, now, now))
+        cur.execute(query, (group_id, row[1], row[2], row[3], now, now))
         conn.commit()
     except psycopg2.Error as e:
         return False, f"Database insertion error: {e}"
