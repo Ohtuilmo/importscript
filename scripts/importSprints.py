@@ -1,7 +1,7 @@
 
 from db_connection import get_db_connection, close_db_connection
 import csv
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import psycopg2
 from pathlib import Path
 
@@ -60,11 +60,15 @@ def insert_into_database(row, group_id):
     try:
         conn, cur = get_db_connection()
         now = datetime.now(timezone.utc)
+
+        start_date = row[2] +timedelta(hours=3)
+        end_date = row[3] +timedelta(hours=3)
+
         query = """
         INSERT INTO sprints (group_id, sprint, start_date, end_date, created_at, updated_at)
         VALUES (%s, %s, %s, %s, %s, %s)
         """
-        cur.execute(query, (group_id, row[1], row[2], row[3], now, now))
+        cur.execute(query, (group_id, row[1], start_date, end_date, now, now))
         conn.commit()
     except psycopg2.Error as e:
         return False, f"Database insertion error: {e}"

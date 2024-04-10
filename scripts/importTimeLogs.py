@@ -84,6 +84,8 @@ def add_time_log(date, minutes, description, student_number, sprint_id):
     created_at = datetime.now(timezone.utc)
     updated_at = datetime.now(timezone.utc)
 
+    date += timedelta(hours=3)
+
     if check_if_row_exists(date, minutes, description, student_number, sprint_id):
         return False, "Timelog already exists in the database"
 
@@ -136,8 +138,8 @@ def process_file(filepath):
                 invalid_rows.append((row, error_sprint_id))
                 continue
 
-            sprint_start_date_naive = sprint_start_date.replace(tzinfo=None)
-            sprint_end_date_naive = sprint_end_date.replace(tzinfo=None) + timedelta(hours=3)
+            sprint_start_date_naive = sprint_start_date.replace(hour=0, tzinfo=None)
+            sprint_end_date_naive = sprint_end_date.replace(hour=0, tzinfo=None)
 
             if date < sprint_start_date_naive or date > sprint_end_date_naive:
                 invalid_rows.append((row, "Timelog date is not within the sprint date range"))
