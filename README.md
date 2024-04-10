@@ -37,7 +37,7 @@ eg.
 Ohtuprojektien ilmoittautumisjärjestelmä;1;2024-1-17;2024-1-24
 ```
 
-Note that the group name has to exactly the one used in Ohtuilmo app. Note also the date format!
+Note that the group name has to be exactly the one used in the Ohtuilmo app. Note also the date format!
 
 **Required data format for files in timelogs_data:**
 
